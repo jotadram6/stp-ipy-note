@@ -1,0 +1,8 @@
+*.txt
+*.*~
+*.root
+*.npy
+*.pdf
+*.pyc
+*.sh
+*.C
