@@ -6,3 +6,7 @@
 *.pyc
 *.sh
 *.C
+*.tar.gz
+*.odp
+*.cc*
+*.cc
