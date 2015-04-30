@@ -1,0 +1,5 @@
+To extract histograms from stp tree (analysis tree):
+Jets used to reconstruct resonances and resonances itself: python JetResonances.py
+
+To extract histograms from cuts tree (nminus1 tree):
+Six leading jets pt and eta: python JetsExtractor.py
