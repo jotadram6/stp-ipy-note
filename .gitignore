@@ -10,3 +10,4 @@
 *.odp
 *.cc*
 *.cc
+PyScripts/*.root
