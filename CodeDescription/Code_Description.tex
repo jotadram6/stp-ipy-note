@@ -1,0 +1,130 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[francais]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{lmodern}
+\usepackage{mathtools,amssymb,amsthm}
+\usepackage{lipsum}
+\usepackage{hyperref}
+\hypersetup{
+  unicode=true,
+  urlcolor=purple
+}
+\usepackage{graphicx}
+
+\title{Code description by scripts}
+\author{Jose Ruiz}
+\date{22 May 2015}
+
+\begin{document}
+
+\maketitle
+
+\section*{Glossary}
+\textbf{MiniTree definition}: I'll refer to \textbf{MiniTree} to the tree built with python scripts containing minimal information for N-1 plots, analysis selection optimization and plotting. Constructed from analysis code results.
+
+\textbf{Analysis code}: When I refer to analysis code it's meant the analysis run with extractor. This code is here:  /sps/cms/ruizalva/SL6/CMSSW\_5\_3\_18/src/Extractors/\\PatExtractor/plugins/SingleTprime\_analysis.cc. This code takes as input the extractor results and builds up four trees:
+\begin{itemize}
+\item \textit{stp}: Analysis tree, corresponding to the signal sample.
+\item \textit{stp3LNC}: Control sample
+\item \textit{cuts}: For N-1 plots on the preselection cuts
+\item \textit{NC}: Tree keeping the number of combinations used on the control sample
+\end{itemize}
+
+\textbf{Dominant backgrounds}: It refers to TTJets, QCD HT 500 to 1000, and QCD HT to inf MC samples
+
+\textbf{Subdominant backgrounds}: It refers to QCD PT hat samples, single top, diboson and DY to cc and DY to bb.
+
+\textbf{MC signal samples}: Refers to MC signal samples for all mass points.
+
+\section{Common utilities}
+
+There is two python scripts with common utilities used in several notebooks and other python scripts. 
+
+\begin{itemize}
+\item \textbf{Generic.py}: Imports ROOT library and needed python libraries as \textit{numpy} or \textit{array}. Also imports \textit{PUR.C} for the definition of the PU reweighting function \textit{PUR\_function} and used weights. Defines weights for different MC samples and file names. Defines also a generic function \textit{SetAxis} to change axis settings on histograms, and \textit{SetCos} to set cosmetics of histograms: fill color, line color, line width...
+\item \textbf{PUR.C}: Definition of PU reweighting utilities. In order to apply the weights a C function is needed, no python function can be passed in a TCut object.
+\item \textbf{rootnotes.py}: Utilities for plotting using pyroot
+\end{itemize}
+
+\section{Matching efficiency}
+
+The matching efficiency is performed in the notebook \textbf{Matching\_Efficiencies.ipynb} First cells are for exclusive matching efficiency per mass point, then inclusive efficiency is calculated. Both efficiencies are stored in python lists and the plotted at the end of the notebook.
+
+\section{GEN information}
+
+To extract the T' width at GEN level the scrip used is: \textbf{PyScripts/DecayExtractor.py}. It extracts such information directly from \textit{Extractor} trees, specifically \textit{MC} tree asking for the T' PDG id \textit{6000006} and with ``3'' status. Produces a pdf with the width of the T' for each mass point.
+
+\section{T' width after decay}
+
+To extract the T' width after decay from matched jets to MC truth:\\ \textbf{PyScripts/DecayExtractor\_FromMatching.py}. It finds in the \textit{stp} tree, created with the analysis code, the matched jets for the Higgs, W and top and plot from the lorentz vector sum the T' mass. It writes to a root file such mass for each mass point.
+
+\section{Plotting GEN width vs T' width after decay vs reconstructed width}
+
+The plotting of three widths (GEN, decayed T' from MC truth and reconstruction with $\chi^{2}$ sorting algorithm) is done in the notebook \textbf{Histogram\_drawer.ipynb} in the last two cells. It creates a pdf file with a plot per page for the three widths for each mass point. The plotting is done via a generic function to plot histograms from root files containing purely histograms defined in \textbf{HistoOverDrawerFromHistoFile.py}
+
+\section{Higgs Braching ratios}
+
+All possible Higgs branching ratios are drawn in \textbf{Histogram\_drawer.ipynb} for all MC signal samples before trigger in the cell entitled \textit{Plotting BR's}. The information is stored in the \textit{cuts} tree, from analysis code output, under the variable \textit{HiggsProductsBT}. Same info after trigger is also stored in the variable \textit{HiggsProductsAT}.
+
+\section{Creation of MiniTrees}
+
+MiniTrees are stored in numpy arrays to facilitate the reading in other python script or ipython notebooks.
+
+\subsection{For N-1 plots at preselection}
+\label{nm1minitrees}
+
+Construction of MiniTrees containing variables that need to be compared at preselection is done in various scripts:
+\begin{itemize}
+\item \textbf{PyScripts/NumpyNm1SFArraysConstructor.py}: For dominant backgrounds, MC signal samples and data.
+\item \textbf{PyScripts/NumpyArraysConstructor\_SubdominantBKGS.py}: For subdominant backgrounds
+\end{itemize}
+Finally, there is also a MiniTree built for validation of SF application done with \textbf{PyScripts/NumpyNm1SFArraysConstructor.py} with the functions to recalculate weights from SF's defined in \textbf{PyScripts/BTagSFtoWeigths.py}. \textit{Under validation}
+
+\subsection{For selection optimization after reconstruction}
+\label{selminitrees}
+
+Construction of MiniTrees containing variables that need to optimize the selection after reconstruction, background estimation from data and final selection, is done in various scripts:
+\begin{itemize}
+\item \textbf{PyScripts/NumpyArraysConstructor.py}: For dominant backgrounds, MC signal samples and data.
+\item \textbf{PyScripts/NumpyArraysConstructor\_SubdominantBKGS.py}: For subdominant backgrounds
+\end{itemize}
+
+\section{Leading jets pt right after trigger cut}
+
+\textbf{PyScripts/JetsExtractor.py} builds root files with the pt and eta histograms from the 6 leading jets right after trigger selection for all MC signal samples. Plotting to a pdf file is done in the notebook \textbf{Histogram\_drawer.ipynb} in cells entitled \textit{Drawing eta of objects} and \textit{Drawing pt of objects}. 
+
+\section{Resonances (W, H and top) information}
+
+\textbf{PyScripts/JetsResonances.py} builds root files with the pt, eta and mass histograms from the resonances of MC signal samples after reconstruction without HT cut. Plotting to a pdf file is done in the notebook \textbf{Histogram\_drawer.ipynb} in cells entitled \textit{Drawing eta of objects} and \textit{Drawing pt of objects} and \textit{Drawing masses of resonances, right after reconstruction (No HT cut)}. 
+
+\section{N-1 plots at preselection}
+
+The plots for pt and eta of 6 leading jets, Number of vertices and HT are produced in the ipython notebook \textbf{Preselection\_Nminus1.ipynb} from cell entitled \textit{Alternative start of the notebook, to run over constructed npy arrays from last analysis version}. Takes as inputs the MiniTree created in \ref{nm1minitrees}.
+
+\section{Selection after reconstruction optimization}
+
+The optimization of event selection based on the reconstructed objects is done in the notebook \textbf{Selection\_Optimization.ipynb}:
+\begin{itemize}
+\item First cell to import packages.
+\item Second cell takes as input the MiniTrees created in \ref{selminitrees}.
+\item Scan over variables performed in third cell producing a pdf for M5J for ttbar QCD HT 500 and 700 GeV signal mass point for the scan. The long list of values produced as output can be used to calculate the expected limits with THETA at lyoserv in the script /gridgroup/cms/jruizalv/WA/LatestExtra/CMSSW\_5\_3\_18/src/theta/\\Tprime/Optimization.py replacing python list called \textit{A}. To launch THETA calculation one should execute \textbf{../utils2/theta\-auto.py Optimization.py}
+\item Fourth cell finds the cut for which $S/B$ is highest with ttbar as only background, the minimum QCD and highest $S/B$ taking into account also QCD. 
+\item In fifth cell the best cut is set and N-1 plots for ttbar, QCD HT 500 and 700 GeV mass point are produced. Efficiencies, $S/B$, $S/\sqrt{S+B}$ and yields per cut are calculated.
+\item In last two cells HT cut is shuffled to be applied at the end and efficiencies, estimators and yields are recalculated. In addition, gaussian fit of the signal is performed cut per cut for all MC signal samples.
+\end{itemize}
+
+\section{Study on minimal b-tags requirement}
+
+A study to determine which combination between 3 working points for CSV to select at least 3 b-tags was performed in notebook \textbf{Number\_Of\_Btags\_Study.ipynb}. 
+\begin{itemize}
+\item First cell: import of packages
+\item Second cell: Setting different combinations between working points to select 3 b-tags and counting number of events passing each cuts for ttbar, QCD HT 500 and 700 GeV signal mass point. 
+\item Third cell: Printing results from cell 2
+\item Fourth cell: Saving results from cell 2 in a numpy array
+\item Fifth cell: Calculating efficiencies for each cut for all MC signal samples, calculation of $S/B$ and $S/\sqrt{S+B}$ using ttbar and QCD 500 as backgrounds.
+\end{itemize}
+
+\end{document}
