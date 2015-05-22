@@ -17,7 +17,7 @@ def HistoExtractor(Files,tree,Variable,Hname,Binning,PDFFile,Cut = ""):
     """
     
     Rfile = ROOT.TFile(PDFFile.split(".")[0]+".root", "recreate")
-        
+
     CMC=ROOT.TCut(Cut)
     Histos=[]
     for i in xrange(len(Files)):
