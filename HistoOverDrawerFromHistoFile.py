@@ -39,7 +39,7 @@ def HistoOverDrawer(Files,Hname,ReBin,PDFFile,weights,Normalized,Units,XaxisT,st
         Pad1.Draw()
         Pad1.cd()
     
-        LEG=ROOT.TLegend(0.55,0.7,0.89,0.89)
+        LEG=ROOT.TLegend(0.55,0.6,0.89,0.89)
         LEG.SetFillColor(0)
         """
         if isinstance(Files[i],str):
@@ -77,7 +77,7 @@ def HistoOverDrawer(Files,Hname,ReBin,PDFFile,weights,Normalized,Units,XaxisT,st
                 SetCos(Histos[i][j], cosm[i][0], cosm[i][1], cosm[i][2], cosm[i][3], cosm[i][4], cosm[i][5])
                 if len(YRange)==2: Histos[i][j].GetYaxis().SetRangeUser(YRange[0],YRange[1])
                 if len(XRange[j])==2: Histos[i][j].GetXaxis().SetRangeUser(XRange[j][0],XRange[j][1])
-                LEG.AddEntry(Histos[i][j], leg[i][j], "l")
+                LEG.AddEntry(Histos[i][j], leg[i][j], "l"); LEG.AddEntry(ROOT.TObject(), GetMR(Histos[i][j]), ""); LEG.AddEntry(ROOT.TObject(), GetEWI(Histos[i][j]), "")
                 if not Normalized:
                     if len(YRange)!=2: Histos[i][j].SetMaximum(max(Maxima[i])*1.05)
                     if i==0: Histos[i][j].Draw("hist")
@@ -87,7 +87,7 @@ def HistoOverDrawer(Files,Hname,ReBin,PDFFile,weights,Normalized,Units,XaxisT,st
                     else: Histos[i][j].DrawNormalized("hist same")
                 LEG.Draw()
                 if LOG: Pad1.SetLogy(); Pad1.RedrawAxis()
-            CurCanv1.SaveAs(PDFFile[:-4]+"_"+Titles[i][j]+".C")
+            #CurCanv1.SaveAs(PDFFile[:-4]+"_"+Titles[i][j]+".C")
             if j==0: CurCanv1.Print(PDFFile+"(","Title:"+Titles[i][j])
             elif j!=0 and j!=(len(Histos[0])-1): CurCanv1.Print(PDFFile,"Title:"+Titles[i][j])
             else: CurCanv1.Print(PDFFile+")","Title:"+Titles[i][j])

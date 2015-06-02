@@ -120,3 +120,24 @@ QWeights=[Q500Weight,Q1000Weight]
 NevtsMassPoints=[95167.,98817.,99464.,99375.,95801.,99257.,99174.,95960.,99078.]
 XSNevtsMassPoints=[0.2154,0.1778,0.1437,0.1186,0.1,0.0843,0.0726,0.0626,0.0539]
 NWeights=Lumi*(0.577/0.94)*np.array(XSNevtsMassPoints)/np.array(NevtsMassPoints)
+
+#Propagation of error functions
+def DivE(x,y,dx,dy):
+    return (x/y)*((dx/x)+(dy/y))
+
+def MulE(x,y,dx,dy):
+    return (x*y)*((dx/x)+(dy/y))
+
+def SqrtE(x,dx):
+    return np.sqrt(x)*0.5*(dx/x)
+
+#Getting Info strings
+def GetMR(Histo):
+    return "Mean={0:.2f}".format(Histo.GetMean())+"#pm{0:.2f}".format(Histo.GetMeanError())+" RMS={0:.2f}".format(Histo.GetRMS())+"#pm{0:.2f}".format(Histo.GetRMSError())
+
+def GetEWI(Histo):
+    INT=Histo.Integral(0,Histo.GetNbinsX()+1)
+    ENT=Histo.GetEntries()
+    W=INT/ENT
+    #return "Entries={0:.2f}".format(ENT)+" W={0:.2f}".format(W)+" Int={0:.2f}".format(INT)+"+-{0:.2f}".format(W*np.sqrt(ENT))
+    return "Entries={0:.2f}".format(ENT)+" Int={0:.2f}".format(INT)+"#pm{0:.2f}".format(W*np.sqrt(ENT))

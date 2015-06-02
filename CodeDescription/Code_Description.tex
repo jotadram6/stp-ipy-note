@@ -127,4 +127,58 @@ A study to determine which combination between 3 working points for CSV to selec
 \item Fifth cell: Calculating efficiencies for each cut for all MC signal samples, calculation of $S/B$ and $S/\sqrt{S+B}$ using ttbar and QCD 500 as backgrounds.
 \end{itemize}
 
+\section{Analysis code: /sps/cms/ruizalva/SL6/CMSSW\_5\_3\_18\\/src/Extractors/PatExtractor/plugins/\\SingleTprime\_analysis.cc}
+
+Code has three main trees:
+\begin{itemize}
+\item m\_tree\_stp: Signal Sample (stp tree)
+\item m\_tree\_cuts: N-1 on signal sample (cuts tree)
+\item m\_tree\_stp\_3LNC: Control Sample (3LNC tree)
+\end{itemize}
+
+Code contained several parts for checks and to explore different variables, characteristics of signal or bkg, etc. The great majority of this parts have been commented to not run in \today~version. I kept variables that I'm not strictly using right now but that can be useful, asked for, afterward, for example b-jets pt.
+
+\subsection{Description by lines}
+\begin{itemize}
+\item Line 67-81: Definition of Higgs, W and top mass and width for $\chi^{2}$ reconstruction.
+\item Line 96-138: Initialization of Lorentz vectors to be included in trees
+\item Line 145-148: Definition of tree
+\item Line 152-385: Declaration of branches included in stp and 3LNC tree
+\item Line 414-468: Declaration of branches included cuts tree
+\item Line 472-546: Reading info from python config file
+\item Line 554-2314: Main function filling up cuts and stp trees
+  \begin{itemize}
+  \item 558-565: Part to calculate the acceptance of signal before trigger
+  \item 568-608: Obtaining Higgs decay channels before trigger
+  \item 610-645: Trigger evaluation and trigger cut
+  \item 648-649: Retrieving number of vertices and number of true interactions
+  \item 653-807: Retrieving jets characteristics as number of CSVL, CSVM, CSVT, jet multiplicity with $\eta<2.5$, jet multiplicity with $\eta<5$, scale factors.
+  \item 837-842: Jet multiplicity with $\eta<2.5$, jet multiplicity with $\eta<5$ cut
+  \item 849-858: Leading jet pt cut
+  \item 903-907: HT cut
+  \item 913-941: Number of b-jets cut
+  \item 960-1056: Retrieve scale factors and weight. 1011-1040: Part to retrieve SF's for b-tagging systematics.
+  \item 1068-1160: PDF systematics (To be reactivated for PDF systematics on signal)
+  \item 1169-1310: $\chi^{2}$ reconstruction
+  \item 2063-2245: Partons to jets matching
+  \end{itemize}
+\item Line 2320-2755: Main function filling up 3NLC tree
+  \begin{itemize}
+  \item 2323-2342: Trigger evaluation and trigger cut
+  \item 2346-2417: Retrieving jets characteristics as number of CSVL, CSVM, CSVT, jet multiplicity with $\eta<2.5$, jet multiplicity with $\eta<5$, scale factors
+  \item 2423-2426: Jet multiplicity with $\eta<2.5$, jet multiplicity with $\eta<5$ cut
+  \item 2433-2444: Leading jet pt cut
+  \item 2468-2469: HT cut
+  \item 2476-2478: Number of b-jets cut
+  \item 2543-2748: $\chi^{2}$ reconstruction keeping all combinations
+  \end{itemize}
+\item Line 2761-2789: Functions to do selections over jets, check minimal pt, $\eta$ regions, etc.
+\item Line 2081-2872: Main analysis function
+\item Line 2878-3007: Functions to retrieve MC truth information
+\end{itemize}
+
+\section*{How to run ipython notebook}
+
+In order to run an ipython notebook one should launch: \textit{ipython notebook} from the folder where the notebooks are located. This opens a browser with all the notebooks, then one should click over the notebook of interest that will be opened in a different browser tab. Ipython notebooks are structured by cells, and they can be run in any order. To run a specific cell one just have to locate the cursor over the cell and do \textit{shift + enter}.  
+
 \end{document}
