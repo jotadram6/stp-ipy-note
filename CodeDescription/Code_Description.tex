@@ -78,7 +78,7 @@ MiniTrees are stored in numpy arrays to facilitate the reading in other python s
 
 Construction of MiniTrees containing variables that need to be compared at preselection is done in various scripts:
 \begin{itemize}
-\item \textbf{PyScripts/NumpyNm1SFArraysConstructor.py}: For dominant backgrounds, MC signal samples and data.
+\item \textbf{PyScripts/NumpyNm1ArraysConstructor.py}: For dominant backgrounds, MC signal samples and data.
 \item \textbf{PyScripts/NumpyArraysConstructor\_SubdominantBKGS.py}: For subdominant backgrounds
 \end{itemize}
 Finally, there is also a MiniTree built for validation of SF application done with \textbf{PyScripts/NumpyNm1SFArraysConstructor.py} with the functions to recalculate weights from SF's defined in \textbf{PyScripts/BTagSFtoWeigths.py}. \textit{Under validation}
@@ -175,6 +175,82 @@ Code contained several parts for checks and to explore different variables, char
 \item Line 2761-2789: Functions to do selections over jets, check minimal pt, $\eta$ regions, etc.
 \item Line 2081-2872: Main analysis function
 \item Line 2878-3007: Functions to retrieve MC truth information
+\end{itemize}
+
+\subsection{Turning the code}
+
+Go to PatExtractor/test and set Analysis.py config file:
+\begin{itemize}
+\item Lines 8,10,11: Values of the Loosee Medium and Tight working points
+\item Line 13: Activate jet selection (Jet multiplicity with $\eta<2.5$, jet multiplicity with $\eta<5$ cut)
+\item Line 14: Activate Leading jet pt cut
+\item Line 15: Activate HT cut
+\item Line 16: Activate b-tag multiplicity cut
+\item Line 38: Set value cut on jets with $\eta<2.5$
+\item Line 39: Set value cut on jets with $\eta<5$
+\item Line 40: Set value to cut on leading jet pt.
+\item Line 41: Set value to cut on HT.
+\item Line 42: Set value to cut b-tag multiplicity.
+\item Line 73: Activate mathching, for reconstruction efficiency
+\item Line 74: Activate $\chi^{2}$ reconstruction procedure
+\end{itemize}
+
+Then to run over data:
+\begin{verbatim}
+python RunMany_OnlyAnlaysis_DATA_ccage.py
+\end{verbatim}
+Creates a folder \textit{Workplace\_Data\_\*} with the results.
+
+To run over MC:
+\begin{verbatim}
+python RunMany_OnlyAnlaysis_MC_ccage.py
+\end{verbatim}
+Creates a folder \textit{Workplace\_\*} with the results.
+
+Scripts needed in the PatExtractor/test folder:
+\begin{itemize}
+\item SingleTprime\_DATA\_Template.py: Template python config file to run over data
+\item SingleTprime\_MC\_Template.py: Template python config file to run on MC
+\item batchJob\_MC3.sh: bash template file to be launched on the queue system. Also reads the config file /afs/in2p3.fr/home/r/ruizalva/5318\_sl6.sh (Copied also in /afs/in2p3.fr/home/r/ruizalva/public/)
+\item triggers\_jets.xml: Trigger setting
+\end{itemize}
+
+To retrieve and merge Data results:
+\begin{verbatim}
+pyhton FileMoverCCAGE_full.py Version Workplace
+\end{verbatim}where \textit{Workplace} is the directory created by \textit{RunMany\_OnlyAnlaysis\_DATA\_ccage.py} and \textit{Version} is the desired name of the string.
+
+To retrieve and merge MC results:
+\begin{verbatim}
+pyhton FileMoverCCAGE_data.py Version Workplace
+\end{verbatim}where \textit{Workplace} is the directory created by \textit{RunMany\_OnlyAnlaysis\_MC\_ccage.py} and \textit{Version} is the desired name of the string, it can be the same name as for data version. 
+
+These two steps create a \textit{Version} folder in PatExtractor/bin folder. These files are used as input to create the minitrees. 
+
+To create the minitrees the scripts are in PatExtractor/bin/PyScripts. To run any of them one should do, for example:
+\begin{verbatim}
+python NumpyNm1ArraysConstructor.py
+\end{verbatim}
+
+\begin{itemize}
+\item Line 5: Basic path to be set (Where root merged versions are located
+\item Line 132: Version to process
+\item Line 137: Minitrees for MC
+\item line 139: Minitrees for DATA. Is divided in parts to accelerate the running. One can copy in various directories and launch in parallel the minitrees construction. To don't duplicate events one must set line 141.
+\end{itemize}
+
+Minitrees are lighter than root files from the analysis, and plotting is faster. I then copy the minitrees (.npy files) to my laptop.
+
+To run the preselection data-MC comparison:
+\begin{itemize}
+\item Copy on local:
+\begin{verbatim}
+https://github.com/jotadram6/stp-ipy-note/blob/master/Preselection_Nminus1.ipynb
+\end{verbatim}
+\item Start the notebook running at cell entitled \textit{Alternative start of the notebook, to run over constructed npy arrays from last analysis version} (cell 11)
+\item Cell 11: Reading minitrees. PyScripts/SignalSample\_preselectionV1.npy for Signal and dominant backgrounds. PyScripts/SubBKGMC\_preselection\_V1.npy for subdominant backgrounds. PyScripts/Data\_preselectionV1.npy for data. 
+\item Cell 12: Cuts and weights
+\item Cell 13: Plotting
 \end{itemize}
 
 \section*{How to run ipython notebook}
