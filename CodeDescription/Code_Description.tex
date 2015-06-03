@@ -241,6 +241,20 @@ RunDpart1/*
   \end{itemize}
 \end{itemize}
 
+\subsection{Creating a new working area}
+
+The following instructions are to create a clean working space at \textit{ccage}:
+
+\begin{verbatim}
+source ${VO_CMS_SW_DIR}/cmsset_default.sh
+cd YOUR_OWN_PATH_IN_SPS
+cmsrel CMSSW_5_3_18
+cd CMSSW_5_3_18/src/
+tar -zxvf /sps/cms/ruizalva/CodeCopy/CodeCopy.tar.gz
+scram b clean
+scram b -j8
+\end{verbatim}
+
 \subsection{Turning the code}
 
 Go to PatExtractor/test and set Analysis.py config file:
@@ -270,6 +284,8 @@ To run over MC:
 python RunMany_OnlyAnlaysis_MC_ccage.py
 \end{verbatim}
 Creates a folder \textit{Workplace\_\*} with the results.
+
+\textbf{ATTENTION:} You must change in the scripts your own location in line 30 for RunMany\_OnlyAnlaysis\_DATA\_ccage.py and in line 35 for RunMany\_OnlyAnlaysis\_MC\_ccage.py
 
 Scripts needed in the PatExtractor/test folder:
 \begin{itemize}

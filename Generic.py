@@ -131,6 +131,9 @@ def MulE(x,y,dx,dy):
 def SqrtE(x,dx):
     return np.sqrt(x)*0.5*(dx/x)
 
+def EffE(eff,N):
+    return np.sqrt((eff*(1-eff))/N)
+
 #Getting Info strings
 def GetMR(Histo):
     return "Mean={0:.2f}".format(Histo.GetMean())+"#pm{0:.2f}".format(Histo.GetMeanError())+" RMS={0:.2f}".format(Histo.GetRMS())+"#pm{0:.2f}".format(Histo.GetRMSError())
