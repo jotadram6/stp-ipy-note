@@ -101,14 +101,15 @@ ListTreesNamesE=["S600ntupleE","S650ntupleE","S700ntupleE","S750ntupleE","S800nt
 
 #Sntuple.Print()
 #"M5J:DRHJ:DRWH:RelHT:Eta6thJ:M2HP:DRTp6thJ:HM:chi2:MTHAsym"
-#Cut1 = ROOT.TCut("chi2<140")
+CutHT = ROOT.TCut("THT>550")
+Cut1 = ROOT.TCut("chi2<820")
 CutDRbb = ROOT.TCut("DRHJ<=1.2")
 CutDRWH = ROOT.TCut("DRWH>=1.6 && DRWH<=4.0")
 CutHM = ROOT.TCut("HM>=105 && HM<=145")
-CutM2HP = ROOT.TCut("M2HP>7.0")
-CutRelHT = ROOT.TCut("RelHT>=0.67")
+CutM2HP = ROOT.TCut("M2HP>8.0")
+CutRelHT = ROOT.TCut("RelHT>=0.69")
 CutDRTp6thJ = ROOT.TCut("DRTp6thJ>4.7")
-CutMTHAsym = ROOT.TCut("MTHAsym>=0.08 && MTHAsym<=0.28")
+CutMTHAsym = ROOT.TCut("MTHAsym>=0.1 && MTHAsym<=0.3")
 
 Lumi=19694.513
 
