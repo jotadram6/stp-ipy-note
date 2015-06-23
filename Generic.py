@@ -122,6 +122,18 @@ NevtsMassPoints=[95167.,98817.,99464.,99375.,95801.,99257.,99174.,95960.,99078.]
 XSNevtsMassPoints=[0.2154,0.1778,0.1437,0.1186,0.1,0.0843,0.0726,0.0626,0.0539]
 NWeights=Lumi*(0.577/0.94)*np.array(XSNevtsMassPoints)/np.array(NevtsMassPoints)
 
+NevtsDiboson=[9989803.,9989440.,9789108.]
+XSDiboson=[7.6, 33.6, 56.0]
+DibosonWeights=Lumi*np.array(XSDiboson)/np.array(NevtsDiboson)
+
+NevtsSingleT=[259575.,3752921.,496681.,139803.,1932775.,492545.]
+XSSingleT=[3.79, 54.87, 11.1, 1.76, 29.74, 11.1]
+SingleTWeights=Lumi*np.array(XSSingleT)/np.array(NevtsSingleT)
+
+NevtsDY=[2001966.,1997817.]
+XSDY=[3840.86, 3060.099]
+DYWeights=Lumi*np.array(XSDY)/np.array(NevtsDY)
+
 #Propagation of error functions
 def DivE(x,y,dx,dy):
     return (x/y)*((dx/x)+(dy/y))
