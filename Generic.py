@@ -102,14 +102,16 @@ ListTreesNamesE=["S600ntupleE","S650ntupleE","S700ntupleE","S750ntupleE","S800nt
 #Sntuple.Print()
 #"M5J:DRHJ:DRWH:RelHT:Eta6thJ:M2HP:DRTp6thJ:HM:chi2:MTHAsym"
 CutHT = ROOT.TCut("THT>550")
-Cut1 = ROOT.TCut("chi2<820")
+Cut1 = ROOT.TCut("chi2<8")
 CutDRbb = ROOT.TCut("DRHJ<=1.2")
 CutDRWH = ROOT.TCut("DRWH>=1.6 && DRWH<=4.0")
 CutHM = ROOT.TCut("HM>=105 && HM<=145")
-CutM2HP = ROOT.TCut("M2HP>8.0")
-CutRelHT = ROOT.TCut("RelHT>=0.69")
-CutDRTp6thJ = ROOT.TCut("DRTp6thJ>4.7")
-CutMTHAsym = ROOT.TCut("MTHAsym>=0.1 && MTHAsym<=0.3")
+CutM2HP = ROOT.TCut("M2HP>6.8")
+CutRelHT = ROOT.TCut("RelHT>=0.67")
+CutDRTp6thJ = ROOT.TCut("DRTp6thJ>4.8")
+MTHAsymWin="10.50"; MTHAsymMean="0.17"
+CutMTHAsym=ROOT.TCut("MTHAsym>=("+MTHAsymMean+"-"+MTHAsymWin+") && MTHAsym<=("+MTHAsymMean+"+"+MTHAsymWin+")")
+#CutMTHAsym = ROOT.TCut("MTHAsym>=0.1 && MTHAsym<=0.3")
 
 Lumi=19694.513
 
@@ -136,16 +138,24 @@ DYWeights=Lumi*np.array(XSDY)/np.array(NevtsDY)
 
 #Propagation of error functions
 def DivE(x,y,dx,dy):
-    return (x/y)*((dx/x)+(dy/y))
+    if x!=0 and y!=0: return (x/y)*((dx/x)+(dy/y))
+    else: return 0.0
 
 def MulE(x,y,dx,dy):
-    return (x*y)*((dx/x)+(dy/y))
+    if x!=0 and y!=0: return (x*y)*((dx/x)+(dy/y))
+    else: return 0.0
 
 def SqrtE(x,dx):
-    return np.sqrt(x)*0.5*(dx/x)
+    if x!=0: return np.sqrt(x)*0.5*(dx/x)
+    else: return 0.0
 
 def EffE(eff,N):
-    return np.sqrt((eff*(1-eff))/N)
+    if N!=0: return np.sqrt((eff*(1-eff))/N)
+    else: return 0.0
+
+def EffV(a,b):
+    if b!=0: return a/b
+    else: return 0.0
 
 #Getting Info strings
 def GetMR(Histo):
@@ -154,6 +164,65 @@ def GetMR(Histo):
 def GetEWI(Histo):
     INT=Histo.Integral(0,Histo.GetNbinsX()+1)
     ENT=Histo.GetEntries()
-    W=INT/ENT
+    if ENT!=0: W=INT/ENT
+    else: W=0
     #return "Entries={0:.2f}".format(ENT)+" W={0:.2f}".format(W)+" Int={0:.2f}".format(INT)+"+-{0:.2f}".format(W*np.sqrt(ENT))
     return "Entries={0:.2f}".format(ENT)+" Int={0:.2f}".format(INT)+"#pm{0:.2f}".format(W*np.sqrt(ENT))
+
+def GetEffHisto(CutType,CenValue,Tree,SampleName,Var,BinsLim,CutApp):
+    """CutType: 
+                'w'-> window --------> CenValue must be also set
+                'g'-> great than
+                'l'-> less than
+    """
+    HistName=Var+"BaseHist"
+    EffHistName=Var+"EffHist"+SampleName
+    if CutType=="w":
+        WVar="TMath::Abs("+Var+"-"+CenValue+")"
+        Tree.Draw(WVar+" >> "+HistName+BinsLim,CutApp)
+        TemHisto=ROOT.gDirectory.Get(HistName)
+        Eff=TemHisto.Clone(EffHistName)
+        for j in xrange(1,TemHisto.GetXaxis().GetNbins()+1):
+            EffBin=1.0; EffErr=1.0
+            if TemHisto.Integral()!=0:
+                EffBin=TemHisto.Integral(1,j)/TemHisto.Integral()
+                EffErr=EffE(EffBin,TemHisto.Integral())
+            Eff.SetBinContent(j,EffBin); Eff.SetBinError(j,EffErr)
+    else:
+        Tree.Draw(Var+" >> "+HistName+BinsLim,CutApp)
+        TemHisto=ROOT.gDirectory.Get(HistName)
+        Eff=TemHisto.Clone(EffHistName)
+        for j in xrange(1,TemHisto.GetXaxis().GetNbins()+1):
+            EffBin=1.0; EffErr=1.0
+            if TemHisto.Integral()!=0:
+                if CutType=="g": EffBin=TemHisto.Integral(j,TemHisto.GetXaxis().GetNbins()+1)/TemHisto.Integral()
+                elif CutType=="l": EffBin=TemHisto.Integral(1,j)/TemHisto.Integral()
+                EffErr=EffE(EffBin,TemHisto.Integral())
+            Eff.SetBinContent(j,EffBin); Eff.SetBinError(j,EffErr)
+    return Eff
+
+def NormFunc(Cut,InvCut,Var,BinsLim,Tree1,Tree2):
+    """Tree1: Signal Sample
+    Tree2: Control Sample
+    Output: N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in
+    """
+    NHistoSSIn=Var+"SSIn"
+    NHistoCSIn=Var+"CSIn"
+    NHistoSSOut=Var+"SSOut"
+    NHistoCSOut=Var+"CSOut"
+    Tree1.Draw(Var+" >> "+NHistoSSIn+BinsLim,Cut)
+    Tree1.Draw(Var+" >> "+NHistoSSOut+BinsLim,InvCut)
+    Tree2.Draw(Var+" >> "+NHistoCSIn+BinsLim,Cut)
+    Tree2.Draw(Var+" >> "+NHistoCSOut+BinsLim,InvCut)
+    HistoSSIn=ROOT.gDirectory.Get(NHistoSSIn)
+    HistoSSOut=ROOT.gDirectory.Get(NHistoSSOut)
+    HistoCSIn=ROOT.gDirectory.Get(NHistoCSIn)
+    HistoCSOut=ROOT.gDirectory.Get(NHistoCSOut)
+    N_cs_in=HistoCSIn.GetEntries()
+    N_cs_out=HistoCSOut.GetEntries()
+    N_ss_in=HistoSSIn.GetEntries()
+    N_ss_out=HistoSSOut.GetEntries()
+    R_cs=N_cs_in/N_cs_out
+    R_ss=N_ss_in/N_ss_out
+    Np_ss_in=R_cs*N_ss_out
+    return N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in
