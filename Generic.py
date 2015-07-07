@@ -201,7 +201,7 @@ def GetEffHisto(CutType,CenValue,Tree,SampleName,Var,BinsLim,CutApp):
             Eff.SetBinContent(j,EffBin); Eff.SetBinError(j,EffErr)
     return Eff
 
-def NormFunc(Cut,InvCut,Var,BinsLim,Tree1,Tree2):
+def NormFunc(Cut,InvCut,Var,BinsLim,Tree1,Tree2,CutVar,CutVarBinsLim,CutNm1,Chi2TestBool):
     """Tree1: Signal Sample
     Tree2: Control Sample
     Output: N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in
@@ -225,4 +225,11 @@ def NormFunc(Cut,InvCut,Var,BinsLim,Tree1,Tree2):
     R_cs=N_cs_in/N_cs_out
     R_ss=N_ss_in/N_ss_out
     Np_ss_in=R_cs*N_ss_out
-    return N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in
+    if Chi2TestBool:
+        Tree1.Draw(CutVar+" >> SS_CutVar"+CutVarBinsLim,CutNm1)
+        Tree2.Draw(CutVar+" >> CS_CutVar"+CutVarBinsLim,CutNm1)
+        CutVarHistoSS=ROOT.gDirectory.Get("SS_CutVar")
+        CutVarHistoCS=ROOT.gDirectory.Get("CS_CutVar")
+        Chi2TestRes = CutVarHistoCS.Chi2Test(CutVarHistoSS,"UU CHI2/NDF")
+        return N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in,Chi2TestRes
+    else: return N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in
