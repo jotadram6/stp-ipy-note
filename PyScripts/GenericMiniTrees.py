@@ -117,6 +117,91 @@ def BtagWeight(JetsPT,JetsETA,JetsID,JetsCSV,FileIndex,EffMatrix):
     wtbtagErr = np.sqrt( ((err1+err2)**2) + ((err3 + err4)**2) ) * wtbtag #un-correlated for b/c and light
     return wtbtag
 
+def BtagWeightSys(JetsPT,JetsETA,JetsID,JetsCSV,FileIndex,EffMatrix,UpDown,BCorL):
+    """BCorL==True b's or c's are varied, if BCorL==False lights are varied
+       Up Varitation -> UpDown=1
+       Down Variation -> UpDown=-1
+    """
+    mcTag = 1.; mcNoTag = 1.; dataTag = 1.; dataNoTag = 1.; errTag = 0.; errNoTag = 0.
+    err1 = 0; err2 = 0; err3 = 0; err4 = 0;
+    for j in xrange(JetsPT.size()):
+        eta=JetsETA.at(j)
+        pt=JetsPT.at(j)
+        ID=JetsID.at(j)
+        if pt<30 or fabs(eta)>=2.4: continue
+        SF=get_SF_btag(pt,eta,ID)
+        eff=EffMatrix[FileIndex][getptbin_for_btag(pt),get_eta_bin_jet(eta),get_flav_bin_jet(ID)]
+        if BCorL:
+            if abs(ID)==5 or abs(ID)==4: SFValue=SF[0]+UpDown*SF[1]
+            else: SFValue=SF[0]
+        else:
+            if abs(ID)!=5 and abs(ID)!=4: SFValue=SF[0]+UpDown*SF[1]
+            else: SFValue=SF[0]
+        if CSVM(JetsCSV.at(j),JetsETA.at(j)):
+            mcTag *= eff
+            dataTag *= eff*SFValue
+            
+            if abs(ID)==5 or abs(ID)==4:  err1 += SF[1]/SFValue #correlated for b/c
+            else: err3 += SF[1]/SFValue #correlated for light
+        else:
+            mcNoTag *= (1- eff)
+            dataNoTag *= (1- eff*SFValue) 
+            
+            if abs(ID)==5 or abs(ID)==4: err2 += (-eff*SF[1])/(1-eff*SFValue) #correlated for b/c
+            else: err4 +=  (-eff*SF[1])/(1-eff*SFValue) #correlated for light
+    if (mcNoTag*mcTag)!=0: wtbtag = ( dataNoTag * dataTag ) / ( mcNoTag * mcTag )
+    else: wtbtag=0.
+    wtbtagErr = np.sqrt( ((err1+err2)**2) + ((err3 + err4)**2) ) * wtbtag #un-correlated for b/c and light
+    return wtbtag
+
+def ExtractingMCMethod1aSysInfoFromTree(files,tree,ListTreesNames,TreeStructureT,SampleFile,EntDiv,WhichPart,EfficiencyFile,UpDown,BCorL):
+    AllSamples=[]
+    Eff=np.load(EfficiencyFile)
+    for f in files:
+        CutsChain=ROOT.TChain(tree)
+        CutsChain.Add(f)
+        entries = CutsChain.GetEntries()
+        if WhichPart<EntDiv-1: Entries=entries/EntDiv
+        else: Entries=entries-(entries/EntDiv)*(EntDiv-1)
+        if files.index(f)>=0 and files.index(f)<=NsignalFiles-1: print "Filling signal..."
+        elif files.index(f)>0: print "Filling bkgs..."
+        print "Entries for file ", f, " are: ", Entries
+        TempTree= ROOT.TNtuple(ListTreesNames[files.index(f)],ListTreesNames[files.index(f)],TreeStructureT)
+        for i in xrange(Entries):
+            if WhichPart==0: CutsChain.GetEntry(i)
+            else: CutsChain.GetEntry(((entries/EntDiv)*WhichPart)+i)
+            #CutsChain.GetEntry(i)
+            if CutsChain.THT<550: continue
+            #M5J:DRHJ:DRWH:RelHT:M2HP:DRTp6thJ:HM:chi2:MTHAsym
+            if tree=="stp":
+                HiggsV=ROOT.TLorentzVector(CutsChain.Reconstructed_Higgs.X(),CutsChain.Reconstructed_Higgs.Y(),CutsChain.Reconstructed_Higgs.Z(),CutsChain.Reconstructed_Higgs.T())
+                Higgs2ndJV=ROOT.TLorentzVector(CutsChain.Second_Higgs_Jet.X(),CutsChain.Second_Higgs_Jet.Y(),CutsChain.Second_Higgs_Jet.Z(),CutsChain.Second_Higgs_Jet.T())
+                J6thV=ROOT.TLorentzVector(CutsChain.Jet6th.X(),CutsChain.Jet6th.Y(),CutsChain.Jet6th.Z(),CutsChain.Jet6th.T())
+                TprimeV=ROOT.TLorentzVector(CutsChain.Reconstructed_Tprime.X(),CutsChain.Reconstructed_Tprime.Y(),CutsChain.Reconstructed_Tprime.Z(),CutsChain.Reconstructed_Tprime.T())
+                Top2=HiggsV+J6thV
+                W2=Higgs2ndJV+J6thV
+                TopJV=ROOT.TLorentzVector(CutsChain.Top_Jet.X(),CutsChain.Top_Jet.Y(),CutsChain.Top_Jet.Z(),CutsChain.Top_Jet.T())
+                ListOfVariables = [CutsChain.THT,
+                                   CutsChain.Reconstructed_Tprime.M(),
+                                   CutsChain.DeltaR_of_Higgs_Jets,
+                                   CutsChain.DeltaR_of_W_Higgs,
+                                   CutsChain.Relative_THT,
+                                   ((Top2.M()+W2.M())/CutsChain.Reconstructed_Higgs.M()),
+                                   TprimeV.DeltaR(J6thV),
+                                   CutsChain.Reconstructed_Higgs.M(),
+                                   (CutsChain.HiggsChi2+CutsChain.TopChi2),
+                                   ((CutsChain.Reconstructed_Top.M()-CutsChain.Reconstructed_Higgs.M())/(CutsChain.Reconstructed_Top.M()+CutsChain.Reconstructed_Higgs.M())),
+                                   CutsChain.Number_True_Interactions,
+                                   BtagWeightSys(CutsChain.JetsPT,CutsChain.JetsETA,CutsChain.Flavor,CutsChain.JetsCSV,files.index(f),Eff,UpDown,BCorL),
+                                   Top2.M(),
+                                   CutsChain.Number_CSVMbtagged_jets]
+            TempTree.Fill(array('f',ListOfVariables))
+        AllSamples.append(TempTree)
+        del(TempTree)
+    AllSamples=np.array(AllSamples)
+    np.save(SampleFile,AllSamples)
+    del(AllSamples)
+
 def ExtractingMCMethod1aInfoFromTree(files,tree,ListTreesNames,TreeStructureT,SampleFile,EntDiv,WhichPart,EfficiencyFile):
     AllSamples=[]
     Eff=np.load(EfficiencyFile)
@@ -356,7 +441,7 @@ def ExtractingMCInfoFromTree_VectorVersion(files,tree,ListTreesNames,TreeStructu
 
 if __name__ == '__main__':
 
-    VersionToProcess="V_QCDEstim/"
+    VersionToProcess="V8/"
     N=40 #Subdivisions to process TTbar and Data control sample
 
     ######
@@ -426,28 +511,40 @@ if __name__ == '__main__':
             ExtractingMCMethod1aInfoFromTree(MCFiles[9:10],"stp3LNC",ListTreesNamesA[9:10],TreeStructure,"ControlSample_TTJets_DRleq1p2_"+str(i)+"_"+VersionToProcess[:-1],N,i,EffFile)
     if DoNm1MC: ExtractingMCMethod1aInfoFromTree(MCFiles,"cuts",ListTreesNamesA,TreeStructureANm1,"SignalSample_preselection_"+VersionToProcess[:-1],1,0,EffFile)
 
+    #####BTAG SYSTEMATICS####
+    DoBSys=True
+    
+    if DoBSys:
+        ExtractingMCMethod1aSysInfoFromTree(MCFiles[:9],"stp",ListTreesNamesA[:9],TreeStructureA,"SignalSample_SignalMassPoints_BSysBCUp_"+VersionToProcess[:-1],1,0,EffFile,1,True)
+        ExtractingMCMethod1aSysInfoFromTree(MCFiles[:9],"stp",ListTreesNamesA[:9],TreeStructureA,"SignalSample_SignalMassPoints_BSysBCDown_"+VersionToProcess[:-1],1,0,EffFile,-1,True)
+        ExtractingMCMethod1aSysInfoFromTree(MCFiles[:9],"stp",ListTreesNamesA[:9],TreeStructureA,"SignalSample_SignalMassPoints_BSysLUp_"+VersionToProcess[:-1],1,0,EffFile,1,False)
+        ExtractingMCMethod1aSysInfoFromTree(MCFiles[:9],"stp",ListTreesNamesA[:9],TreeStructureA,"SignalSample_SignalMassPoints_BSysLDown_"+VersionToProcess[:-1],1,0,EffFile,-1,False)
+
     ##################################
     #Control sample in vector version#
     ##################################
     
-    VectorVersion="V8_VectorControlSample/"
-    N=40
-    TreeStructureVV="THT:M5J:DRHJ:DRWH:RelHT:M2HP:DRTp6thJ:HM:chi2:MTHAsym:M2ndT:NCSVM:NComb"
+    DoVectorVersion=False
 
-    #Data
-    VVDATAFiles=Base+VectorVersion+DATA_F
+    if DoVectorVersion:
+        VectorVersion="V8_VectorControlSample/"
+        N=40
+        TreeStructureVV="THT:M5J:DRHJ:DRWH:RelHT:M2HP:DRTp6thJ:HM:chi2:MTHAsym:M2ndT:NCSVM:NComb"
 
-    #for i in xrange(N):
-        #if i<1: continue
-        #ExtractingInfoFromTree_VectorVersion(VVDATAFiles,"stp3LNC","DatantupleE",TreeStructureVV,"DataE"+str(i)+"_"+VectorVersion[:-1],N,i)
+        #Data
+        VVDATAFiles=Base+VectorVersion+DATA_F
 
-    #MC
-    VVMCFiles=[]
-    for i in MC_files: VVMCFiles.append(Base+VectorVersion+i)
+        for i in xrange(N):
+            #if i<1: continue
+            ExtractingInfoFromTree_VectorVersion(VVDATAFiles,"stp3LNC","DatantupleE",TreeStructureVV,"DataE"+str(i)+"_"+VectorVersion[:-1],N,i)
 
-    ExtractingMCInfoFromTree_VectorVersion(VVMCFiles[:9],"stp3LNC",ListTreesNamesA[:9],TreeStructureVV,"ControlSample_SignalMassPoints_"+VectorVersion[:-1],1,0)
-    ExtractingMCInfoFromTree_VectorVersion(VVMCFiles[10:12],"stp3LNC",ListTreesNamesA[10:12],TreeStructureVV,"ControlSample_QCDHT_"+VectorVersion[:-1],1,0)
-    ExtractingMCInfoFromTree_VectorVersion(VVMCFiles[12:],"stp3LNC",ListTreesNamesA[12:],TreeStructureVV,"ControlSample_SubBKGMC_"+VectorVersion[:-1],1,0)
-    for i in xrange(N):
-        #if i<1: continue
-        ExtractingMCInfoFromTree_VectorVersion(VVMCFiles[9:10],"stp3LNC",ListTreesNamesA[9:10],TreeStructureVV,"ControlSample_TTJets_"+str(i)+"_"+VectorVersion[:-1],N,i)
+        #MC
+        VVMCFiles=[]
+        for i in MC_files: VVMCFiles.append(Base+VectorVersion+i)
+
+        ExtractingMCInfoFromTree_VectorVersion(VVMCFiles[:9],"stp3LNC",ListTreesNamesA[:9],TreeStructureVV,"ControlSample_SignalMassPoints_"+VectorVersion[:-1],1,0)
+        ExtractingMCInfoFromTree_VectorVersion(VVMCFiles[10:12],"stp3LNC",ListTreesNamesA[10:12],TreeStructureVV,"ControlSample_QCDHT_"+VectorVersion[:-1],1,0)
+        ExtractingMCInfoFromTree_VectorVersion(VVMCFiles[12:],"stp3LNC",ListTreesNamesA[12:],TreeStructureVV,"ControlSample_SubBKGMC_"+VectorVersion[:-1],1,0)
+        for i in xrange(N):
+            #if i<1: continue
+            ExtractingMCInfoFromTree_VectorVersion(VVMCFiles[9:10],"stp3LNC",ListTreesNamesA[9:10],TreeStructureVV,"ControlSample_TTJets_"+str(i)+"_"+VectorVersion[:-1],N,i)
