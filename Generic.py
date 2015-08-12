@@ -125,7 +125,7 @@ XSNevtsMassPoints=[0.2154,0.1778,0.1437,0.1186,0.1,0.0843,0.0726,0.0626,0.0539]
 NWeights=Lumi*(0.577/0.94)*np.array(XSNevtsMassPoints)/np.array(NevtsMassPoints)
 
 NevtsDiboson=[9989803.,9989440.,9789108.]
-XSDiboson=[7.6, 33.6, 56.0]
+XSDiboson=[33.6, 56.0, 7.6]
 DibosonWeights=Lumi*np.array(XSDiboson)/np.array(NevtsDiboson)
 
 NevtsSingleT=[259575.,3752921.,496681.,139803.,1932775.,492545.]
@@ -155,6 +155,10 @@ def EffE(eff,N):
 
 def EffV(a,b):
     if b!=0: return a/b
+    else: return 0.0
+
+def SysErr(n,N,dn,dN):
+    if N!=0: return (abs(N-n)/N)*np.sqrt((((dn+dN)/abs(N-n))**2+(dN/N)**2)) #DivE(abs(N-n),N,(dn+dN),dN)
     else: return 0.0
 
 #Getting Info strings
@@ -233,3 +237,56 @@ def NormFunc(Cut,InvCut,Var,BinsLim,Tree1,Tree2,CutVar,CutVarBinsLim,CutNm1,Chi2
         Chi2TestRes = CutVarHistoCS.Chi2Test(CutVarHistoSS,"UU CHI2/NDF")
         return N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in,Chi2TestRes
     else: return N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in
+
+def AddingTriggerSys(Cut,Var,BinsLim,Tree1,HistoName):
+    TriggerSysError=[0.05, 0.03, 0.01, 0.01, 0.01] #as function of jet6 pt: [20,40), [40,60), [60,80), [80,100), [100,120)
+    MinPT=[20,40,60,80,100]; MaxPT=[40,60,80,100,120]
+    M5JHistos=[]
+
+    RestOfjet6Cut= ROOT.TCut("jet6pt>=120")
+    Tree1.Draw(Var+" >> "+HistoName+BinsLim,Cut*RestOfjet6Cut)
+    FinalHisto=ROOT.gDirectory.Get(HistoName); FinalHisto.Sumw2()
+    print "Entries for M5J with jet6pt>120:", FinalHisto.GetEntries()
+
+    for i in xrange(5):
+        CutJet6Pt = ROOT.TCut("(jet6pt>="+str(MinPT[i])+" && jet6pt<"+str(MaxPT[i])+")")
+        Tree1.Draw(Var+" >> "+HistoName+str(i)+BinsLim,Cut*CutJet6Pt)
+        M5JHistos.append(ROOT.gDirectory.Get(HistoName+str(i)))
+        M5JHistos[-1].Sumw2()
+        print "Entries for M5J with jet6pt>:{0:.0f}".format(MinPT[i]), M5JHistos[-1].GetEntries()
+        if M5JHistos[-1].GetEntries()!=0:
+            for j in xrange(1,M5JHistos[-1].GetXaxis().GetNbins()+1):
+                BinCon=M5JHistos[-1].GetBinContent(j); SysErr=BinCon*TriggerSysError[i]
+                BinErr=M5JHistos[-1].GetBinError(j); TotErr=np.sqrt(BinErr**2+SysErr**2)
+                print "For bin=", j, "Base error=", BinErr, "Sys error=", SysErr, "Total Error=", TotErr
+                M5JHistos[-1].SetBinError(j,TotErr)
+        FinalHisto.Add(M5JHistos[-1])
+
+    return FinalHisto
+            
+
+def AddingReWTriggerSys(Cut,Var,BinsLim,Tree1,HistoName):
+    TriggerSysError=[0.94, 0.97, 0.99, 1.01, 1.01] #as function of jet6 pt: [20,40), [40,60), [60,80), [80,100), [100,120)
+    MinPT=[20,40,60,80,100]; MaxPT=[40,60,80,100,120]
+    M5JHistos=[]
+
+    RestOfjet6Cut= ROOT.TCut("jet6pt>=120")
+    Tree1.Draw(Var+" >> "+HistoName+BinsLim,Cut*RestOfjet6Cut)
+    FinalHisto=ROOT.gDirectory.Get(HistoName); FinalHisto.Sumw2()
+    print "Entries for M5J with jet6pt>120:", FinalHisto.GetEntries()
+
+    for i in xrange(5):
+        CutJet6Pt = ROOT.TCut("(jet6pt>="+str(MinPT[i])+" && jet6pt<"+str(MaxPT[i])+")")
+        Tree1.Draw(Var+" >> "+HistoName+str(i)+BinsLim,Cut*CutJet6Pt)
+        M5JHistos.append(ROOT.gDirectory.Get(HistoName+str(i)))
+        M5JHistos[-1].Sumw2(); M5JHistos[-1].Scale(TriggerSysError[i])
+        print "Entries and weight for M5J with jet6pt>{0:.0f}: {1:.0f} {2:.2f}".format(MinPT[i], M5JHistos[-1].GetEntries(), TriggerSysError[i])
+        #if M5JHistos[-1].GetEntries()!=0:
+        #    for j in xrange(1,M5JHistos[-1].GetXaxis().GetNbins()+1):
+        #        BinCon=M5JHistos[-1].GetBinContent(j); SysErr=BinCon*TriggerSysError[i]
+        #        BinErr=M5JHistos[-1].GetBinError(j); TotErr=np.sqrt(BinErr**2+SysErr**2)
+        #        print "For bin=", j, "Base error=", BinErr, "Sys error=", SysErr, "Total Error=", TotErr
+        #        M5JHistos[-1].SetBinError(j,TotErr)
+        FinalHisto.Add(M5JHistos[-1])
+
+    return FinalHisto
