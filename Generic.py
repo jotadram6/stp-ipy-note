@@ -104,7 +104,8 @@ ListTreesNamesE=["S600ntupleE","S650ntupleE","S700ntupleE","S750ntupleE","S800nt
 CutHT = ROOT.TCut("THT>550")
 Cut1 = ROOT.TCut("chi2<8")
 CutDRbb = ROOT.TCut("DRHJ<=1.2")
-CutDRWH = ROOT.TCut("DRWH>=1.6 && DRWH<=4.0")
+#CutDRWH = ROOT.TCut("DRWH>=1.6 && DRWH<=4.0")
+CutDRWH = ROOT.TCut("DRWH>=-1.0")
 CutHM = ROOT.TCut("HM>=105 && HM<=145")
 CutM2HP = ROOT.TCut("M2HP>6.8")
 CutRelHT = ROOT.TCut("RelHT>=0.67")
@@ -186,26 +187,28 @@ def GetEffHisto(CutType,CenValue,Tree,SampleName,Var,BinsLim,CutApp):
         Tree.Draw(WVar+" >> "+HistName+BinsLim,CutApp)
         TemHisto=ROOT.gDirectory.Get(HistName)
         Eff=TemHisto.Clone(EffHistName)
-        for j in xrange(1,TemHisto.GetXaxis().GetNbins()+1):
+        for j in xrange(1,TemHisto.GetXaxis().GetNbins()+2):
             EffBin=1.0; EffErr=1.0
             if TemHisto.Integral()!=0:
                 EffBin=TemHisto.Integral(1,j)/TemHisto.Integral()
-                EffErr=EffE(EffBin,TemHisto.Integral())
+                if EffBin>=0.99: EffErr=0.0
+                else: EffErr=EffE(EffBin,TemHisto.Integral())
             Eff.SetBinContent(j,EffBin); Eff.SetBinError(j,EffErr)
     else:
         Tree.Draw(Var+" >> "+HistName+BinsLim,CutApp)
         TemHisto=ROOT.gDirectory.Get(HistName)
         Eff=TemHisto.Clone(EffHistName)
-        for j in xrange(1,TemHisto.GetXaxis().GetNbins()+1):
+        for j in xrange(1,TemHisto.GetXaxis().GetNbins()+2):
             EffBin=1.0; EffErr=1.0
             if TemHisto.Integral()!=0:
-                if CutType=="g": EffBin=TemHisto.Integral(j,TemHisto.GetXaxis().GetNbins()+1)/TemHisto.Integral()
-                elif CutType=="l": EffBin=TemHisto.Integral(1,j)/TemHisto.Integral()
-                EffErr=EffE(EffBin,TemHisto.Integral())
+                if CutType=="g": EffBin=TemHisto.Integral(j,TemHisto.GetXaxis().GetNbins()+2)/TemHisto.Integral(0,TemHisto.GetXaxis().GetNbins()+2)
+                elif CutType=="l": EffBin=TemHisto.Integral(1,j)/TemHisto.Integral(0,TemHisto.GetXaxis().GetNbins()+2)
+                if EffBin>=0.99: EffErr=0.0
+                else: EffErr=EffE(EffBin,TemHisto.Integral())
             Eff.SetBinContent(j,EffBin); Eff.SetBinError(j,EffErr)
     return Eff
 
-def NormFunc(Cut,InvCut,Var,BinsLim,Tree1,Tree2,CutVar,CutVarBinsLim,CutNm1,Chi2TestBool):
+def NormFunc(Cut,InvCut,Var,BinsLim,Tree1,Tree2,CutVar,CutVarBinsLim,CutNm1,Chi2TestBool,RFileName):
     """Tree1: Signal Sample
     Tree2: Control Sample
     Output: N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in
@@ -230,17 +233,21 @@ def NormFunc(Cut,InvCut,Var,BinsLim,Tree1,Tree2,CutVar,CutVarBinsLim,CutNm1,Chi2
     R_ss=N_ss_in/N_ss_out
     Np_ss_in=R_cs*N_ss_out
     if Chi2TestBool:
+        RFile = ROOT.TFile("HiggsMass"+RFileName+".root", "recreate")
         Tree1.Draw(CutVar+" >> SS_CutVar"+CutVarBinsLim,CutNm1)
         Tree2.Draw(CutVar+" >> CS_CutVar"+CutVarBinsLim,CutNm1)
         CutVarHistoSS=ROOT.gDirectory.Get("SS_CutVar")
         CutVarHistoCS=ROOT.gDirectory.Get("CS_CutVar")
+        CutVarHistoSS.Write()
+        CutVarHistoCS.Write()
         Chi2TestRes = CutVarHistoCS.Chi2Test(CutVarHistoSS,"UU CHI2/NDF")
+        RFile.Close()
         return N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in,Chi2TestRes
     else: return N_cs_in,N_cs_out,N_ss_in,N_ss_out,R_cs,R_ss,Np_ss_in
 
 def AddingTriggerSys(Cut,Var,BinsLim,Tree1,HistoName):
     TriggerSysError=[0.05, 0.03, 0.01, 0.01, 0.01] #as function of jet6 pt: [20,40), [40,60), [60,80), [80,100), [100,120)
-    MinPT=[20,40,60,80,100]; MaxPT=[40,60,80,100,120]
+    MinPT=[30,50,70,90,110]; MaxPT=[50,70,90,110,130]
     M5JHistos=[]
 
     RestOfjet6Cut= ROOT.TCut("jet6pt>=120")
@@ -266,14 +273,14 @@ def AddingTriggerSys(Cut,Var,BinsLim,Tree1,HistoName):
             
 
 def AddingReWTriggerSys(Cut,Var,BinsLim,Tree1,HistoName):
-    TriggerSysError=[0.94, 0.97, 0.99, 1.01, 1.01] #as function of jet6 pt: [20,40), [40,60), [60,80), [80,100), [100,120)
-    MinPT=[20,40,60,80,100]; MaxPT=[40,60,80,100,120]
+    TriggerSysError=[1.04, 0.82, 1.04, 1.0, 1.0] #as function of jet6 pt: [20,40), [40,60), [60,80), [80,100), [100,120)
+    MinPT=[30,50,70,90,110]; MaxPT=[50,70,90,110,130]
     M5JHistos=[]
 
-    RestOfjet6Cut= ROOT.TCut("jet6pt>=120")
+    RestOfjet6Cut= ROOT.TCut("jet6pt>=130")
     Tree1.Draw(Var+" >> "+HistoName+BinsLim,Cut*RestOfjet6Cut)
     FinalHisto=ROOT.gDirectory.Get(HistoName); FinalHisto.Sumw2()
-    print "Entries for M5J with jet6pt>120:", FinalHisto.GetEntries()
+    print "Entries for M5J with jet6pt>130:", FinalHisto.GetEntries()
 
     for i in xrange(5):
         CutJet6Pt = ROOT.TCut("(jet6pt>="+str(MinPT[i])+" && jet6pt<"+str(MaxPT[i])+")")
@@ -290,3 +297,30 @@ def AddingReWTriggerSys(Cut,Var,BinsLim,Tree1,HistoName):
         FinalHisto.Add(M5JHistos[-1])
 
     return FinalHisto
+
+def CorrectErrorLowStats(H1):
+    H1.SetBinErrorOption(ROOT.TH1.kPoisson)
+    for j in xrange(1,H1.GetXaxis().GetNbins()+1):
+        H1.GetBinErrorLow(j)
+        H1.GetBinErrorUp(j)
+
+def AddCorrectError(Histo1,Histo2,Weight1,Weight2):
+    "Adds Histo2 to Histo1"
+    for j in xrange(1,Histo1.GetXaxis().GetNbins()+1):
+        BinC1=Histo1.GetBinContent(j)
+        BinC2=Histo2.GetBinContent(j)
+        if BinC1!=0: 
+            BinE1=Histo1.GetBinError(j)
+        else:
+            BinE1=1.841*Weight1
+        if BinC2!=0: 
+            BinE2=Histo2.GetBinError(j)
+        else:
+            BinE2=1.841*Weight2
+        BinCT=BinC1+BinC2
+        BinET=np.sqrt(BinE1**2+BinE2**2)
+        print "histo 1:", BinC1, BinE1
+        print "histo 2:", BinC2, BinE2
+        print "sum histo:", BinCT, BinET
+        Histo1.SetBinContent(j,BinCT)
+        Histo1.SetBinError(j,BinET)
